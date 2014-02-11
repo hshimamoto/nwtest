@@ -206,7 +206,7 @@ static void sender_thread(void)
 		int nr_tx, i;
 		uint64_t tsc = rte_rdtsc();
 
-		nr = generate(&bufs, seq, tsc, 10);
+		nr = generate((struct rte_mbuf **)&bufs, seq, tsc, 10);
 
 		nr_tx = rte_eth_tx_burst(portid, 0, bufs, nr);
 		for (i = nr_tx; i < nr; i++)
