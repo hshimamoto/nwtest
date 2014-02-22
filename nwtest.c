@@ -162,6 +162,9 @@ static uint8_t frame[4096];
 static struct ether_addr dstmac = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 };
 static struct ether_addr srcmac = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x02 };
 
+/* rate */
+static uint64_t burst_pkts, burst_nsec;
+
 /* statistics */
 static uint64_t pkts_out;
 static uint64_t pkts_in;
@@ -212,20 +215,35 @@ static void sender_thread(void)
 {
 	uint16_t seq = 0;
 	unsigned portid = 0;
+	uint64_t blank;
+
+	if (burst_nsec)
+		blank = freq / (1000000000 / burst_nsec);
+	else
+		blank = 0;
+
+	burst_pkts = 10;
 
 	for (;;) {
-		struct rte_mbuf *bufs[10];
-		int nr;
+		int nr, burst = burst_pkts;
 		int nr_tx, i;
 		uint64_t tsc = rte_rdtsc();
+		uint64_t wait = tsc + blank;
 
-		nr = generate((struct rte_mbuf **)&bufs, seq, tsc, 10);
+		while (burst > 0) {
+			struct rte_mbuf *bufs[100];
 
-		nr_tx = rte_eth_tx_burst(portid, 0, bufs, nr);
-		for (i = nr_tx; i < nr; i++)
-			rte_pktmbuf_free(bufs[i]);
+			nr = generate((struct rte_mbuf **)&bufs, seq, tsc, burst);
 
-		pkts_out += nr_tx;
+			nr_tx = rte_eth_tx_burst(portid, 0, bufs, nr);
+			for (i = nr_tx; i < nr; i++)
+				rte_pktmbuf_free(bufs[i]);
+			pkts_out += nr_tx;
+			burst -= nr_tx;
+		}
+
+		while (rte_rdtsc() < wait)
+			rte_pause();
 
 		++seq;
 	}
