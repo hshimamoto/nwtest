@@ -274,21 +274,33 @@ next:
 	}
 }
 
+static void show_stats(void)
+{
+}
+
 static void receiver_thread(void)
 {
 	unsigned portid = 0;
+	uint64_t tsc = rte_rdtsc();
 
 	for (;;) {
 		struct rte_mbuf *bufs[10];
 		int nr_rx, i;
 
-		nr_rx = rte_eth_rx_burst(portid, 0, bufs, 10);
-		if (nr_rx == 0)
-			continue;
+		for (i = 0; i < 100; i++) {
+			nr_rx = rte_eth_rx_burst(portid, 0, bufs, 10);
+			if (nr_rx == 0)
+				continue;
 
-		sink(bufs, nr_rx);
+			sink(bufs, nr_rx);
 
-		pkts_in += nr_rx;
+			pkts_in += nr_rx;
+		}
+
+		if (rte_rdtsc() - tsc > freq) {
+			show_stats();
+			tsc += freq;
+		}
 	}
 }
 
