@@ -36,6 +36,8 @@
 #include <rte_byteorder.h>
 #include <rte_ether.h>
 
+static uint64_t freq;
+
 static const struct rte_eth_conf port_conf = {
 	.rxmode = {
 		.jumbo_frame = 0,
@@ -110,6 +112,11 @@ static int setup_env(void)
 {
 	unsigned nr_ports;
 	unsigned portid;
+	uint64_t tsc;
+
+	tsc = rte_rdtsc();
+	sleep(1);
+	freq = rte_rdtsc() - tsc;
 
 	if (rte_pmd_init_all() < 0)
 		rte_exit(EXIT_FAILURE, "failed to init pmd\n");
