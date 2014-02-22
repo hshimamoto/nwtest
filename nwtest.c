@@ -155,6 +155,10 @@ static uint8_t frame[4096];
 static struct ether_addr dstmac = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 };
 static struct ether_addr srcmac = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x02 };
 
+/* statistics */
+static uint64_t pkts_out;
+static uint64_t pkts_in;
+
 static void setup_frame(void)
 {
 	struct ether_hdr *ehdr;
@@ -212,6 +216,8 @@ static void sender_thread(void)
 		for (i = nr_tx; i < nr; i++)
 			rte_pktmbuf_free(bufs[i]);
 
+		pkts_out += nr_tx;
+
 		++seq;
 	}
 }
@@ -227,6 +233,8 @@ static void receiver_thread(void)
 		nr_rx = rte_eth_rx_burst(portid, 0, bufs, 10);
 		for (i = 0; i < nr_rx; i++)
 			rte_pktmbuf_free(bufs[i]);
+
+		pkts_in += nr_rx;
 	}
 }
 
