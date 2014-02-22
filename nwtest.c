@@ -228,6 +228,12 @@ static void sink(struct rte_mbuf **bufs, int nr)
 	int i;
 
 	for (i = 0; i < nr; i++) {
+		void *data = rte_pktmbuf_mtod(bufs[i], void *);
+		struct udp_data *u = data + 42;
+		uint64_t tat;
+
+		tat = tsc - u->send_tsc;
+
 		rte_pktmbuf_free(bufs[i]);
 	}
 }
