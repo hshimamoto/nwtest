@@ -165,6 +165,8 @@ static struct ether_addr srcmac = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x02 };
 /* statistics */
 static uint64_t pkts_out;
 static uint64_t pkts_in;
+static uint64_t hist[10], over;
+static uint64_t units[10];
 
 static void setup_frame(void)
 {
@@ -238,9 +240,18 @@ static void sink(struct rte_mbuf **bufs, int nr)
 		void *data = rte_pktmbuf_mtod(bufs[i], void *);
 		struct udp_data *u = data + 42;
 		uint64_t tat;
+		int h;
 
 		tat = tsc - u->send_tsc;
+		for (h = 0; h < 10; h++) {
+			if (tat < units[h]) {
+				hist[h]++;
+				goto next;
+			}
+		}
+		over++;
 
+next:
 		rte_pktmbuf_free(bufs[i]);
 	}
 }
@@ -279,6 +290,8 @@ int main(int argc, char **argv)
 {
 	int ret;
 	unsigned lcore_id;
+	int i;
+	uint64_t unit;
 
 	ret = rte_eal_init(argc, argv);
 	if (ret < 0)
@@ -291,6 +304,13 @@ int main(int argc, char **argv)
 
 	setup_env();
 	setup_frame();
+
+	/* micro sec */
+	unit = freq / 1000000;
+	for (i = 0; i < 10; i++) {
+		units[i] = unit;
+		unit *= 10;
+	}
 
 	rte_eal_mp_remote_launch(nwtest, NULL, CALL_MASTER);
 	RTE_LCORE_FOREACH_SLAVE(lcore_id) {
