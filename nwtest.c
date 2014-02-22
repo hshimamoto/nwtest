@@ -222,6 +222,16 @@ static void sender_thread(void)
 	}
 }
 
+static void sink(struct rte_mbuf **bufs, int nr)
+{
+	uint64_t tsc = rte_rdtsc();
+	int i;
+
+	for (i = 0; i < nr; i++) {
+		rte_pktmbuf_free(bufs[i]);
+	}
+}
+
 static void receiver_thread(void)
 {
 	unsigned portid = 0;
@@ -231,8 +241,10 @@ static void receiver_thread(void)
 		int nr_rx, i;
 
 		nr_rx = rte_eth_rx_burst(portid, 0, bufs, 10);
-		for (i = 0; i < nr_rx; i++)
-			rte_pktmbuf_free(bufs[i]);
+		if (nr_rx == 0)
+			continue;
+
+		sink(bufs, nr_rx);
 
 		pkts_in += nr_rx;
 	}
