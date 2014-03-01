@@ -112,11 +112,8 @@ static int setup_env(void)
 {
 	unsigned nr_ports;
 	unsigned portid;
-	uint64_t tsc;
 
-	tsc = rte_rdtsc();
-	sleep(1);
-	freq = rte_rdtsc() - tsc;
+	freq = rte_get_tsc_hz();
 
 	if (rte_pmd_init_all() < 0)
 		rte_exit(EXIT_FAILURE, "failed to init pmd\n");
